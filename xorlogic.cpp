@@ -5,7 +5,7 @@ XorLogic::XorLogic()
     saveDir = new QDir("../");
     openDir = new QDir("../");
     file = new QFile();
-    overwriteMode = true;
+    overwriteMode = false;
     filterList = new QStringList();
     deleteInput = false;
 }
