@@ -1,4 +1,4 @@
-#include "xorlogic.h"
+#include "include/xorlogic.h"
 
 XorLogic::XorLogic()
 {
