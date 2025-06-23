@@ -184,7 +184,7 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 
 QByteArray XorLogic::performXOR(QByteArray bytearr)
 {
-    QByteArray result(8, '\0');
+    QByteArray result(bytearr.size(), '\0');
     quint64 modifierInverted = invertBinary(modifier);
     quint64 orderKey = qToBigEndian(modifierInverted);
     const char* keyBytes = reinterpret_cast<const char*>(&orderKey);
@@ -192,7 +192,7 @@ QByteArray XorLogic::performXOR(QByteArray bytearr)
     qDebug() << "Modifier inverted:" << modifierInverted;
     qDebug() << "Input bytes:" << bytearr.toHex();
 
-    for(int i = 0; i < result.size(); i++)
+    for(int i = 0; i < bytearr.size(); i++)
     {
         result[i] = bytearr[i] ^ keyBytes[i];
         qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
