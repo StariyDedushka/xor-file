@@ -1,11 +1,11 @@
-#include "xorlogic.h"
+#include "include/xorlogic.h"
 
 XorLogic::XorLogic()
 {
     saveDir = new QDir("../");
     openDir = new QDir("../");
     file = new QFile();
-    overwriteMode = true;
+    overwriteMode = false;
     filterList = new QStringList();
     deleteInput = false;
 }
@@ -166,10 +166,10 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 
                 emit signal_progress(progress, maxProgress);
 
-                if(bytearr.size() < 8)
-                {
-                    bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
-                }
+                // if(bytearr.size() < 8)
+                // {
+                //     bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
+                // }
                 bytearr = performXOR(bytearr);
                 uint len = file->write(bytearr);
                 qDebug() << "Written bytes to file:" << len;
