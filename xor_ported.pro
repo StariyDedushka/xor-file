@@ -14,12 +14,14 @@ UI_DIR = temp/ui
 
 # Исходные файлы (указываем относительные пути)
 SOURCES += \
+    source/controller.cpp \
     source/main.cpp \
     source/mainwindow.cpp \
     source/xorlogic.cpp
 
 # Заголовочные файлы
 HEADERS += \
+    include/controller.h \
     include/mainwindow.h \
     include/xorlogic.h
 

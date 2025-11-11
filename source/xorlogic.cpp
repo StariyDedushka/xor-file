@@ -2,20 +2,19 @@
 #define READ_SIZE 8 * 1024
 
 XorLogic::XorLogic()
+    : saveDir(new QDir("../"))
+    , openDir(new QDir("../"))
+    , overwriteMode(false)
+    , filterList(new QStringList())
+    , deleteInput(false)
+    , interrupt(false)
 {
-    saveDir = new QDir("../");
-    openDir = new QDir("../");
-    file = new QFile();
-    overwriteMode = false;
-    filterList = new QStringList();
-    deleteInput = false;
 }
 
 XorLogic::~XorLogic()
 {
     delete saveDir;
     delete openDir;
-    delete file;
     delete timer;
     delete filterList;
 }
@@ -24,6 +23,7 @@ void XorLogic::initTimer()
 {
     Q_ASSERT(QThread::currentThread() == this->thread());
     timer = new QTimer(this);
+    timer->setSingleShot(true);
     connect(timer, &QTimer::timeout, this, &XorLogic::slot_timeout);
     connect(this, &XorLogic::signal_timeout_start, this, &XorLogic::slot_startButton_clicked);
 }
@@ -94,7 +94,8 @@ void XorLogic::setupFile()
         QFile *outFile = createFile(files.at(i), false);
         QBuffer *buffer = new QBuffer();
 
-        writeBuffer(file, buffer);
+        if(!writeBuffer(file, buffer))
+            throw std::logic_error("Couldn't write to buffer");
         if(overwriteMode)
         {
             writeFile(file, buffer);
@@ -137,7 +138,7 @@ bool XorLogic::writeBuffer(QFile *file, QBuffer *buffer)
         if(buffer->open(QIODevice::WriteOnly))
         {
             qint64 len = buffer->write(file->readAll());
-            qDebug() << "Written to buffer:" << len;
+            // qDebug() << "Written to buffer:" << len;
             file->close();
             buffer->close();
             return true;
@@ -158,8 +159,10 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 
             while(!buffer->atEnd())
             {
+                if(interrupt)
+                    break;
                 bytearr = buffer->read(READ_SIZE);
-                qDebug() << "Written to byte array from buffer:" << bytearr.size();
+                // qDebug() << "Written to byte array from buffer:" << bytearr.size();
                 progress += bytearr.size();
 
                 emit signal_progress(progress, maxProgress);
@@ -169,9 +172,9 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
                 // {
                 //     bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
                 // }
-                performXOR(&bytearr);
+                performXOR(bytearr);
                 uint len = file->write(bytearr);
-                qDebug() << "Written bytes to file:" << len;
+                // qDebug() << "Written bytes to file:" << len;
             }
         } else return false;
     } else return false;
@@ -181,22 +184,22 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 }
 
 
-void XorLogic::performXOR(QByteArray *bytearr)
+void XorLogic::performXOR(QByteArray& bytearr)
 {
     quint64 modifierInverted = invertBinary(modifier);
     quint64 orderKey = qToBigEndian(modifierInverted);
     const char* keyBytes = reinterpret_cast<const char*>(&orderKey);
 
-    qDebug() << "Modifier inverted:" << modifierInverted;
-    qDebug() << "Input bytes:" << bytearr->toHex();
+    // qDebug() << "Modifier inverted:" << modifierInverted;
+    // qDebug() << "Input bytes:" << bytearr.toHex();
 
-    for(int i = 0; i < READ_SIZE; ++i)
+    for(int i = 0; i < bytearr.size(); ++i)
     {
-        bytearr[i] = reinterpret_cast<const char*>(*bytearr[i] ^ keyBytes[i % 8]);
-        qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
-                    .arg(i)
-                    .arg(QString::number((uchar)*bytearr[i], 16))
-                    .arg(QString::number(keyBytes[i], 16));
+        bytearr[i] = bytearr[i] ^ keyBytes[i % 8];
+        // qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
+        //             .arg(i)
+        //             .arg(QString::number((uchar)*bytearr[i], 16))
+        //             .arg(QString::number(keyBytes[i], 16));
     }
 }
 
@@ -227,11 +230,20 @@ void XorLogic::slot_overwriteModeChecked(bool isChecked)
 
 void XorLogic::slot_startButton_clicked(uint64_t mod)
 {
+    interrupt = false;
     if(timerMode) startTimer();
     scanForFiles();
     modifier = mod;
     run();
 }
+
+void XorLogic::slot_btn_stop_clicked()
+{
+    timer->stop();
+    interrupt = true;
+    qDebug() << "Stop button clicked";
+}
+
 void XorLogic::slot_timerModeChecked(bool isChecked)
 {
     timerMode = isChecked;
@@ -242,17 +254,22 @@ void XorLogic::slot_timerModeChecked(bool isChecked)
 void XorLogic::startTimer()
 {
     quint64 intervalMs = timerInterval * 1000;
-    timer->start(intervalMs); // *1000 т.к. в методе период указывается в миллисекундах
+    timer->start(intervalMs);
     qDebug() << "Timer started!";
 }
 
 void XorLogic::slot_timeout()
 {
     if(!timerMode) timer->stop();
-    run();
-    scanForFiles();
-    startTimer();
+    if(busy)
+    {
+        timer->stop();
+        return;
+    }
     qDebug() << "Timeout reached";
+    scanForFiles();
+    run();
+    startTimer();
 }
 
 QFileInfoList XorLogic::scanForFiles()

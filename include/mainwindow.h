@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QTimer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,6 +28,7 @@ signals:
     void signal_btn_openPath_clicked(QString openPath);
     void signal_timerMode_time_changed(int time);
     void signal_deleteInputChecked(bool isChecked);
+    void signal_btn_stop_clicked();
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -59,11 +61,22 @@ private slots:
     // void on_btn_Stop_clicked();
 
     void on_checkbox_deleteInput_stateChanged();
+    void on_timer_timeout();
+
+    void on_btn_stop_clicked();
+
+public:
+    void init();
 
 private:
     Ui::MainWindow *ui;
     bool timerMode;
     bool deleteInput;
     bool overwriteMode;
+    QTimer timer;
+
+    void blockControls(bool block);
+
+    quint32 timeElapsed;
 };
 #endif // MAINWINDOW_H

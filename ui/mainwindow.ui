@@ -80,7 +80,7 @@
       <item>
        <widget class="QLineEdit" name="editMask">
         <property name="text">
-         <string/>
+         <string>txt dat log</string>
         </property>
        </widget>
       </item>
@@ -281,6 +281,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QLabel" name="label_timer">
+      <property name="text">
+       <string>Прошло времени:</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="topMargin">
        <number>10</number>
@@ -289,6 +296,13 @@
        <widget class="QPushButton" name="btn_Start">
         <property name="text">
          <string>Старт</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_stop">
+        <property name="text">
+         <string>Стоп</string>
         </property>
        </widget>
       </item>
@@ -302,7 +316,7 @@
      <x>0</x>
      <y>0</y>
      <width>350</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>

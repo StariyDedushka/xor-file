@@ -4,13 +4,13 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , timeElapsed(0)
+    , timerMode(false)
 {
     ui->setupUi(this);
     ui->progressBar->setValue(0);
-    timerMode = false;
-    emit signal_timerModeChecked(timerMode);
-    emit signal_timerMode_time_changed(ui->spinbox_cycle->value());
-    emit signal_maskChanged(ui->editMask->text());
+    timer.setInterval(1000);
+    connect(&timer, &QTimer::timeout, this, &MainWindow::on_timer_timeout);
 }
 
 MainWindow::~MainWindow()
@@ -18,12 +18,19 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::init()
+{
+    emit signal_timerModeChecked(timerMode);
+    emit signal_timerMode_time_changed(ui->spinbox_cycle->value());
+    emit signal_maskChanged(ui->editMask->text());
+}
+
 void MainWindow::on_btn_SelectPath_clicked()
 {
     QString openPath = QFileDialog::getExistingDirectory(0, "Выберите папку", "../");
     ui->labelOpenPath->setText(openPath);
     if(!openPath.isEmpty())
-    emit signal_btn_openPath_clicked(openPath);
+        emit signal_btn_openPath_clicked(openPath);
     else QMessageBox::warning(this, "Ошибка", "Неправильный путь!");
 }
 
@@ -92,6 +99,11 @@ void MainWindow::on_btn_Start_clicked()
     emit signal_startButton_clicked(modifier);
 }
 
+void MainWindow::on_timer_timeout()
+{
+    timeElapsed += 1;
+    ui->label_timer->setText(QString("Времени прошло: %1").arg(timeElapsed));
+}
 
 // void MainWindow::on_btn_Stop_clicked()
 // {
@@ -126,23 +138,33 @@ void MainWindow::slot_progress(quint64 progress, quint64 maxProgress)
 void MainWindow::slot_xor_started(QString file_name)
 {
     ui->displayFiles->append(QString("Начата обработка файла ").append(file_name));
-
-    ui->btnCreateNew->setEnabled(false);
-    ui->btnOverwrite->setEnabled(false);
-    ui->btn_SavePath->setEnabled(false);
-    ui->btn_SelectPath->setEnabled(false);
-    ui->btn_Start->setEnabled(false);
-
-    ui->checkbox_deleteInput->setEnabled(false);
-    ui->timer_checkBox->setEnabled(false);
+    timer.start();
+    blockControls(true);
 }
 
 void MainWindow::slot_xor_finished(QString file_name)
 {
     ui->displayFiles->append(QString("Закончена обработка файла ").append(file_name));
-    ui->btnCreateNew->setEnabled(true);
-    ui->btnOverwrite->setEnabled(true);
-    ui->btn_SavePath->setEnabled(true);
-    ui->btn_SelectPath->setEnabled(true);
-    ui->btn_Start->setEnabled(true);
+    blockControls(false);
+    timeElapsed = 0;
+    timer.stop();
 }
+
+void MainWindow::blockControls(bool block)
+{
+
+    ui->btnCreateNew->setEnabled(!block);
+    ui->btnOverwrite->setEnabled(!block);
+    ui->btn_SavePath->setEnabled(!block);
+    ui->btn_SelectPath->setEnabled(!block);
+    ui->btn_Start->setEnabled(!block);
+
+    ui->checkbox_deleteInput->setEnabled(!block);
+    ui->timer_checkBox->setEnabled(!block);
+}
+
+void MainWindow::on_btn_stop_clicked()
+{
+    emit signal_btn_stop_clicked();
+}
+
