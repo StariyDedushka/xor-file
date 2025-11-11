@@ -58,7 +58,7 @@ private:
     quint32 countFiles();
     QFile* createFile(const QFileInfo &fileInfo, bool overwrite);
     uint64_t invertBinary(uint64_t num);
-    QByteArray performXOR(QByteArray bytearr);
+    void performXOR(QByteArray *bytearr);
     void setupFile();
     bool writeBuffer(QFile *file, QBuffer *buffer);
     bool writeFile(QFile *file, QBuffer *buffer);

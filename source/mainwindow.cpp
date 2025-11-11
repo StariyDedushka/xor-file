@@ -24,7 +24,7 @@ void MainWindow::on_btn_SelectPath_clicked()
     ui->labelOpenPath->setText(openPath);
     if(!openPath.isEmpty())
     emit signal_btn_openPath_clicked(openPath);
-    else QMessageBox::warning(this, "Ошибка", "Неправильная директория!");
+    else QMessageBox::warning(this, "Ошибка", "Неправильный путь!");
 }
 
 
@@ -41,7 +41,7 @@ void MainWindow::on_btn_SavePath_clicked()
     if(!savePath.isEmpty())
     emit signal_btn_savePath_clicked(savePath);
     else
-    QMessageBox::warning(this, "Ошибка", "Выберите правильный путь сохранения!");
+    QMessageBox::warning(this, "Ошибка", "Неправильный путь сохранения!");
 }
 
 void MainWindow::on_btnOverwrite_clicked()
@@ -75,7 +75,7 @@ void MainWindow::on_editModifier_editingFinished()
     quint64 mod = ui->editModifier->text().toULongLong();
     if(mod <= 18446744073709551615 && mod > 0)
     emit signal_modifierEdited(mod);
-    else if(mod <= 0) ui->editModifier->setText("18446744073709551615");
+    else if(mod < 0) ui->editModifier->setText("18446744073709551615");
 }
 
 

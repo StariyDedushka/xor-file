@@ -1,4 +1,5 @@
 #include "include/xorlogic.h"
+#define READ_SIZE 8 * 1024
 
 XorLogic::XorLogic()
 {
@@ -87,33 +88,30 @@ void XorLogic::setupFile()
     QFileInfoList files = scanForFiles();
     for(int i = 0; i < files.size(); i++)
     {
-    emit signal_xor_started(files.at(i).fileName());
-    qDebug() << "Performing XOR on file: " << files.at(i).fileName();
-    QFile *file = createFile(files.at(i), true);
-    QFile *outFile = createFile(files.at(i), false);
-    QBuffer *buffer = new QBuffer();
+        emit signal_xor_started(files.at(i).fileName());
+        qDebug() << "Performing XOR on file: " << files.at(i).fileName();
+        QFile *file = createFile(files.at(i), true);
+        QFile *outFile = createFile(files.at(i), false);
+        QBuffer *buffer = new QBuffer();
 
-    writeBuffer(file, buffer);
-    if(overwriteMode)
-    {
-        writeFile(file, buffer);
-        emit signal_xor_finished(files.at(i).fileName());
-        delete file;
-        delete buffer;
-        delete outFile;
-    }
-    else if(!overwriteMode)
-    {
-        if(deleteInput)
+        writeBuffer(file, buffer);
+        if(overwriteMode)
         {
-            deleteFile(file);
+            writeFile(file, buffer);
+            emit signal_xor_finished(files.at(i).fileName());
         }
-        writeFile(outFile, buffer);
-        emit signal_xor_finished(files.at(i).fileName());
-        delete file;
-        delete buffer;
-        delete outFile;
-    }
+        else if(!overwriteMode)
+        {
+            if(deleteInput)
+            {
+                deleteFile(file);
+            }
+            writeFile(outFile, buffer);
+            emit signal_xor_finished(files.at(i).fileName());
+        }
+            delete file;
+            delete buffer;
+            delete outFile;
     }
 }
 
@@ -150,7 +148,7 @@ bool XorLogic::writeBuffer(QFile *file, QBuffer *buffer)
 
 bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 {
-    QByteArray bytearr(8, '\0');
+    QByteArray bytearr(READ_SIZE, '\0');
     quint64 maxProgress = buffer->size();
     quint64 progress = 0;
     if(file->open(QIODevice::WriteOnly))
@@ -160,17 +158,18 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 
             while(!buffer->atEnd())
             {
-                bytearr = buffer->read(8);
+                bytearr = buffer->read(READ_SIZE);
                 qDebug() << "Written to byte array from buffer:" << bytearr.size();
                 progress += bytearr.size();
 
                 emit signal_progress(progress, maxProgress);
 
+                // если нужно дополнение до кратного восьми размера
                 // if(bytearr.size() < 8)
                 // {
                 //     bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
                 // }
-                bytearr = performXOR(bytearr);
+                performXOR(&bytearr);
                 uint len = file->write(bytearr);
                 qDebug() << "Written bytes to file:" << len;
             }
@@ -182,27 +181,23 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 }
 
 
-QByteArray XorLogic::performXOR(QByteArray bytearr)
+void XorLogic::performXOR(QByteArray *bytearr)
 {
-    QByteArray result(bytearr.size(), '\0');
     quint64 modifierInverted = invertBinary(modifier);
     quint64 orderKey = qToBigEndian(modifierInverted);
     const char* keyBytes = reinterpret_cast<const char*>(&orderKey);
 
     qDebug() << "Modifier inverted:" << modifierInverted;
-    qDebug() << "Input bytes:" << bytearr.toHex();
+    qDebug() << "Input bytes:" << bytearr->toHex();
 
-    for(int i = 0; i < bytearr.size(); i++)
+    for(int i = 0; i < READ_SIZE; ++i)
     {
-        result[i] = bytearr[i] ^ keyBytes[i];
+        bytearr[i] = reinterpret_cast<const char*>(*bytearr[i] ^ keyBytes[i % 8]);
         qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
-                        .arg(i)
-                        .arg(QString::number((uchar)bytearr[i], 16))
-                        .arg(QString::number(keyBytes[i], 16))
-                        .arg(QString::number((uchar)result[i], 16));
+                    .arg(i)
+                    .arg(QString::number((uchar)*bytearr[i], 16))
+                    .arg(QString::number(keyBytes[i], 16));
     }
-    qDebug() << "Modified array hex value:" << result.toHex();
-    return result;
 }
 
 void XorLogic::slot_btn_openPath_clicked(QString openPath)
