@@ -19,25 +19,25 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 signals:
-    void signal_modifierEdited(qint64 modifier);
-    void signal_timerModeChecked(bool isChecked);
-    void signal_overwriteModeChecked(bool isChecked);
-    void signal_startButton_clicked(quint64 mod);
-    void signal_maskChanged(QString mask);
-    void signal_btn_savePath_clicked(QString savePath);
-    void signal_btn_openPath_clicked(QString openPath);
-    void signal_timerMode_time_changed(int time);
-    void signal_deleteInputChecked(bool isChecked);
-    void signal_btn_stop_clicked();
+    void modifierEdited(qint64 modifier);
+    void timerModeChecked(bool isChecked);
+    void overwriteModeChecked(bool isChecked);
+    void startButton_clicked();
+    void maskChanged(QString mask);
+    void btn_savePath_clicked(QString savePath);
+    void btn_openPath_clicked(QString openPath);
+    void timerMode_time_changed(int time);
+    void deleteInputChecked(bool isChecked);
+    void btn_stop_clicked();
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
-    void slot_scanComplete(const QFileInfoList &list);
-    void slot_progress(quint64 progress, quint64 maxProgress);
-    void slot_xor_started(QString file_name);
-    void slot_xor_finished(QString file_name);
+    void scanComplete(const QFileInfoList &list);
+    void progress(quint64 progress, quint64 maxProgress);
+    void xor_started(QString file_name);
+    void xor_finished(QString file_name);
 
 private slots:
     void on_btn_SelectPath_clicked();
@@ -61,6 +61,7 @@ private slots:
     // void on_btn_Stop_clicked();
 
     void on_checkbox_deleteInput_stateChanged();
+
     void on_timer_timeout();
 
     void on_btn_stop_clicked();
