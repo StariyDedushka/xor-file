@@ -7,8 +7,10 @@ XorLogic::XorLogic()
     , overwriteMode(false)
     , deleteInput(false)
     , timerMode(false)
+    , busy(false)
+    , timerInterval(0)
+    , timer(this)
 {
-    initTimer();
 }
 
 XorLogic::~XorLogic()
@@ -22,7 +24,8 @@ void XorLogic::initTimer()
     Q_ASSERT(QThread::currentThread() == this->thread());
     timer.setSingleShot(true);
     connect(&timer, &QTimer::timeout, this, &XorLogic::timeout);
-    connect(this, &XorLogic::timeout_start, this, &XorLogic::startButton_clicked);
+    connect(&timer, &QTimer::timeout, this, &XorLogic::timeout, Qt::DirectConnection);
+
 }
 
 quint32 XorLogic::countFiles()
@@ -105,7 +108,7 @@ void XorLogic::setupFile()
             throw std::logic_error("Couldn't write to buffer");
         if(overwriteMode)
         {
-            writeFile(file, buffer);
+            if(!writeFile(file, buffer)) return;
             emit xor_finished(files.at(i).fileName());
         }
         else if(!overwriteMode)
@@ -127,7 +130,7 @@ void XorLogic::setupFile()
                 deleteFile(file);
                 deletedFiles.append(*file);
             }
-            writeFile(outFile, buffer);
+            if(!writeFile(outFile, buffer)) return;
             emit xor_finished(files.at(i).fileName());
         }
         skip = false;
@@ -143,7 +146,9 @@ void XorLogic::run()
     {
         return;
     }
+    busy = true;
     setupFile();
+    busy = false;
 }
 
 bool XorLogic::deleteFile(QFile *file)
@@ -287,7 +292,7 @@ void XorLogic::timeout()
     if(!timerMode) timer.stop();
     if(busy)
     {
-        timer.stop();
+        startTimer();
         return;
     }
     qDebug() << "Timeout reached";

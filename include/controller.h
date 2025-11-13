@@ -18,6 +18,7 @@ public slots:
 
 signals:
     void startLogic();
+    void execStopped();
 
 public:
     Controller();

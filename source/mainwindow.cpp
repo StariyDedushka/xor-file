@@ -170,3 +170,10 @@ void MainWindow::on_btn_stop_clicked()
     emit btn_stop_clicked();
 }
 
+void MainWindow::on_stopped()
+{
+    ui->progressBar->setValue(0);
+    blockControls(false);
+    timeElapsed = 0;
+    timer.stop();
+}

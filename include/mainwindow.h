@@ -38,6 +38,7 @@ public slots:
     void progress(quint64 progress, quint64 maxProgress);
     void xor_started(QString file_name);
     void xor_finished(QString file_name);
+    void on_stopped();
 
 private slots:
     void on_btn_SelectPath_clicked();
@@ -65,6 +66,7 @@ private slots:
     void on_timer_timeout();
 
     void on_btn_stop_clicked();
+
 
 public:
     void init();
