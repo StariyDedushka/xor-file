@@ -81,6 +81,7 @@ QFile* XorLogic::createFile(const QFileInfo &fileInfo, bool overwrite)
 
 uint64_t XorLogic::invertBinary(uint64_t num)
 {
+    qDebug() << "Input number:" << num;
     uint64_t result = 0;
     for(int i = 0; i < 64; i++)
     {
@@ -88,6 +89,7 @@ uint64_t XorLogic::invertBinary(uint64_t num)
         result |= (num & 1);
         num >>= 1;
     }
+    qDebug() << "Result:" << result;
     return result;
 }
 
@@ -203,7 +205,8 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
                 // {
                 //     bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
                 // }
-                performXOR(bytearr);
+                quint64 modifierInverted = invertBinary(modifier);
+                performXOR(modifierInverted, bytearr);
                 uint len = file->write(bytearr);
                 // qDebug() << "Written bytes to file:" << len;
             }
@@ -215,22 +218,20 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 }
 
 
-void XorLogic::performXOR(QByteArray& bytearr)
+void XorLogic::performXOR(quint64 modifier, QByteArray& bytearr)
 {
-    quint64 modifierInverted = invertBinary(modifier);
-    quint64 orderKey = qToBigEndian(modifierInverted);
+    quint64 orderKey = qToBigEndian(modifier);
     const char* keyBytes = reinterpret_cast<const char*>(&orderKey);
-
-    // qDebug() << "Modifier inverted:" << modifierInverted;
-    // qDebug() << "Input bytes:" << bytearr.toHex();
+    qDebug() << "Orderkey = " << orderKey;
+    qDebug() << "Key bytes:" << keyBytes;
 
     for(int i = 0; i < bytearr.size(); ++i)
     {
         bytearr[i] = bytearr[i] ^ keyBytes[i % 8];
-        // qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
-        //             .arg(i)
-        //             .arg(QString::number((uchar)*bytearr[i], 16))
-        //             .arg(QString::number(keyBytes[i], 16));
+        qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
+                    .arg(i)
+                    .arg(QString::number((uchar)bytearr[i], 16))
+                    .arg(QString::number(keyBytes[i % 8], 16));
     }
 }
 
