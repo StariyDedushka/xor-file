@@ -255,7 +255,11 @@ void XorLogic::btn_stop_clicked()
 void XorLogic::timerModeChecked(bool isChecked)
 {
     timerMode = isChecked;
-    if(!timerMode) timer.stop();
+    if(!timerMode)
+        timer.stop();
+    else
+        startTimer();
+
     qDebug() << "Timer mode:" << timerMode;
 }
 
