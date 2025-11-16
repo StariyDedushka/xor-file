@@ -264,7 +264,7 @@
       <item>
        <widget class="QLineEdit" name="editModifier">
         <property name="text">
-         <string>12297829382473034410</string>
+         <string>18446744073709551615</string>
         </property>
         <property name="maxLength">
          <number>20</number>

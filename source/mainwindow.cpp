@@ -55,8 +55,10 @@ void MainWindow::on_btnOverwrite_clicked()
 {
     overwriteMode = ui->btnOverwrite->isChecked();
     emit overwriteModeChecked(overwriteMode);
-    if(overwriteMode) ui->checkbox_deleteInput->setEnabled(false);
-    else ui->checkbox_deleteInput->setEnabled(true);
+    if(overwriteMode)
+        ui->checkbox_deleteInput->setEnabled(false);
+    else
+        ui->checkbox_deleteInput->setEnabled(true);
 }
 
 
@@ -64,8 +66,10 @@ void MainWindow::on_btnCreateNew_clicked()
 {
     // состояние режима перезаписи будем наблюдать через состояние одной кнопки, т.к. она radioButton
     overwriteMode = ui->btnOverwrite->isChecked();
-    if(overwriteMode) ui->checkbox_deleteInput->setEnabled(false);
-    else ui->checkbox_deleteInput->setEnabled(true);
+    if(overwriteMode)
+        ui->checkbox_deleteInput->setEnabled(false);
+    else
+        ui->checkbox_deleteInput->setEnabled(true);
 
     emit overwriteModeChecked(overwriteMode);
 }
@@ -82,7 +86,9 @@ void MainWindow::on_editModifier_editingFinished()
     quint64 mod = ui->editModifier->text().toULongLong();
     if(mod <= 18446744073709551615 && mod > 0)
     emit modifierEdited(mod);
-    else if(mod < 0) ui->editModifier->setText("18446744073709551615");
+
+    else if(mod <= 0)
+        ui->editModifier->setText("18446744073709551615");
 }
 
 
@@ -125,8 +131,10 @@ void MainWindow::scanComplete(const QFileInfoList &list)
 void MainWindow::on_checkbox_deleteInput_stateChanged()
 {
     deleteInput = ui->checkbox_deleteInput->isChecked();
-    if(deleteInput) ui->btnOverwrite->setEnabled(false);
-    else ui->btnOverwrite->setEnabled(true);
+    if(deleteInput)
+        ui->btnOverwrite->setEnabled(false);
+    else
+        ui->btnOverwrite->setEnabled(true);
 
     emit deleteInputChecked(deleteInput);
 }

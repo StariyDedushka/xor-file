@@ -1,22 +1,20 @@
 #include "include/xorlogic.h"
-#define READ_SIZE 8 * 1024
+#define READ_SIZE 8 * 4096
 
 XorLogic::XorLogic()
-    : saveDir(new QDir("../"))
-    , openDir(new QDir("../"))
-    , overwriteMode(false)
+    : overwriteMode(false)
     , deleteInput(false)
     , timerMode(false)
     , busy(false)
     , timerInterval(0)
     , timer(this)
 {
+    saveDir.setPath("../");
+    openDir.setPath("../");
 }
 
 XorLogic::~XorLogic()
 {
-    delete saveDir;
-    delete openDir;
 }
 
 void XorLogic::initTimer()
@@ -32,7 +30,7 @@ quint32 XorLogic::countFiles()
 {
     quint32 count = 0;
     quint32 maxCount = 0;
-    QFileInfoList files = saveDir->entryInfoList(QDir::Files);
+    QFileInfoList files = saveDir.entryInfoList(QDir::Files);
     for(int i = 0; i < files.size(); i++)
     {
         QRegularExpression expr("(\\d+)");
@@ -58,7 +56,7 @@ QFile* XorLogic::createFile(const QFileInfo &fileInfo, bool overwrite)
     if(!overwrite)
     {
         match = regexp.match(fileInfo.baseName());
-        QString newFilename = saveDir->absolutePath().append("/");
+        QString newFilename = saveDir.absolutePath().append("/");
         newFilename.append(fileInfo.baseName());
         match = regexp.match(newFilename);
         if(newFilename.contains("_output"))
@@ -79,19 +77,6 @@ QFile* XorLogic::createFile(const QFileInfo &fileInfo, bool overwrite)
     return createdFile;
 }
 
-uint64_t XorLogic::invertBinary(uint64_t num)
-{
-    qDebug() << "Input number:" << num;
-    uint64_t result = 0;
-    for(int i = 0; i < 64; i++)
-    {
-        result <<= 1;
-        result |= (num & 1);
-        num >>= 1;
-    }
-    qDebug() << "Result:" << result;
-    return result;
-}
 
 void XorLogic::setupFile()
 {
@@ -104,13 +89,13 @@ void XorLogic::setupFile()
         qDebug() << "Performing XOR on file: " << files.at(i).fileName();
         QFile *file = createFile(files.at(i), true);
         QFile *outFile = createFile(files.at(i), false);
-        QBuffer *buffer = new QBuffer();
+        QBuffer buffer;
 
-        if(!writeBuffer(file, buffer))
+        if(!writeBuffer(file, &buffer))
             throw std::logic_error("Couldn't write to buffer");
         if(overwriteMode)
         {
-            if(!writeFile(file, buffer)) return;
+            if(!writeFile(file, &buffer)) return;
             emit xor_finished(files.at(i).fileName());
         }
         else if(!overwriteMode)
@@ -132,12 +117,16 @@ void XorLogic::setupFile()
                 deleteFile(file);
                 deletedFiles.append(*file);
             }
-            if(!writeFile(outFile, buffer)) return;
+            if(!writeFile(outFile, &buffer))
+            {
+                delete file;
+                delete outFile;
+                return;
+            }
             emit xor_finished(files.at(i).fileName());
         }
         skip = false;
         delete file;
-        delete buffer;
         delete outFile;
     }
 }
@@ -170,7 +159,6 @@ bool XorLogic::writeBuffer(QFile *file, QBuffer *buffer)
         if(buffer->open(QIODevice::WriteOnly))
         {
             qint64 len = buffer->write(file->readAll());
-            // qDebug() << "Written to buffer:" << len;
             file->close();
             buffer->close();
             return true;
@@ -195,20 +183,12 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
                     return false;
 
                 bytearr = buffer->read(READ_SIZE);
-                // qDebug() << "Written to byte array from buffer:" << bytearr.size();
                 progressed += bytearr.size();
 
                 emit progress(progressed, maxProgress);
 
-                // если нужно дополнение до кратного восьми размера
-                // if(bytearr.size() < 8)
-                // {
-                //     bytearr.append(QByteArray(8 - bytearr.size(), '\0'));
-                // }
-                quint64 modifierInverted = invertBinary(modifier);
-                performXOR(modifierInverted, bytearr);
+                performXOR(bytearr);
                 uint len = file->write(bytearr);
-                // qDebug() << "Written bytes to file:" << len;
             }
         } else return false;
     } else return false;
@@ -218,40 +198,38 @@ bool XorLogic::writeFile(QFile *file, QBuffer *buffer)
 }
 
 
-void XorLogic::performXOR(quint64 modifier, QByteArray& bytearr)
+void XorLogic::performXOR(QByteArray& bytearr)
 {
-    quint64 orderKey = qToBigEndian(modifier);
-    const char* keyBytes = reinterpret_cast<const char*>(&orderKey);
-    qDebug() << "Orderkey = " << orderKey;
-    qDebug() << "Key bytes:" << keyBytes;
 
     for(int i = 0; i < bytearr.size(); ++i)
     {
-        bytearr[i] = bytearr[i] ^ keyBytes[i % 8];
-        qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
-                    .arg(i)
-                    .arg(QString::number((uchar)bytearr[i], 16))
-                    .arg(QString::number(keyBytes[i % 8], 16));
+        bytearr[i] = bytearr.at(i) ^ keyBytes[i % 8];
+        // qDebug() << QString("Byte %1: 0x%2 XOR 0x%3 = 0x%4")
+        //             .arg(i)
+        //             .arg(QString::number((uchar)bytearr[i], 16))
+        //             .arg(QString::number(keyBytes[i % 8], 16));
     }
 }
 
 void XorLogic::btn_openPath_clicked(QString openPath)
 {
-    openDir->cd(openPath);
+    openDir.cd(openPath);
     scanForFiles();
     qDebug() << "Button open path clicked, open dir: " << openPath;
 }
 
 void XorLogic::btn_savePath_clicked(QString savePath)
 {
-    saveDir->cd(savePath);
+    saveDir.cd(savePath);
     qDebug() << "Button save path clicked, save dir:" << savePath;
 }
 
 void XorLogic::modifierEdited(uint64_t mod)
 {
-    modifier = mod;
-    qDebug() << "Saved modifier:" << modifier;
+    modifier = qToLittleEndian(mod);
+    keyBytes = reinterpret_cast<const char*>(&modifier);
+    qDebug() << "Orderkey = " << modifier;
+    qDebug() << "Key bytes:" << keyBytes;
 }
 
 void XorLogic::overwriteModeChecked(bool isChecked)
@@ -298,13 +276,13 @@ void XorLogic::timeout()
     }
     qDebug() << "Timeout reached";
     scanForFiles();
-    run();
+    // run();
     startTimer();
 }
 
 QFileInfoList XorLogic::scanForFiles()
 {
-    QFileInfoList files = openDir->entryInfoList(QDir::Files);
+    QFileInfoList files = openDir.entryInfoList(QDir::Files);
     QFileInfoList outputList;
     for(int i = 0; i < files.size(); ++i)
     {

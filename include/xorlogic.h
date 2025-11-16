@@ -45,22 +45,21 @@ public:
     ~XorLogic();
     void run();
 private:
-    // QFile file;
     uint64_t modifier;
     bool overwriteMode;
     bool timerMode;
     bool busy;
     QTimer timer;
     quint64 timerInterval;
-    QDir *saveDir;
-    QDir *openDir;
+    QDir saveDir;
+    QDir openDir;
     bool deleteInput;
     QStringList filterList;
+    const char* keyBytes;
 
     quint32 countFiles();
     QFile* createFile(const QFileInfo &fileInfo, bool overwrite);
-    uint64_t invertBinary(uint64_t num);
-    void performXOR(quint64 modifier, QByteArray& bytearr);
+    void performXOR(QByteArray& bytearr);
     void setupFile();
     bool writeBuffer(QFile *file, QBuffer *buffer);
     bool writeFile(QFile *file, QBuffer *buffer);
